@@ -150,11 +150,13 @@ class App(tk.Tk):
             self,
             width=128,
             height=64,
-            cell_size=5,
+            cell_size=7,
             margin=0.5
         )
+        grid.pack(anchor="nw", padx=(10, 0), pady=(10, 0))
 
-        grid.pack()
+        btn_clear = ttk.Button(self, text="Clear", command=grid.clear)
+        btn_clear.pack(anchor="nw", padx=(10, 0), pady=(5, 0))
 
 if __name__ == "__main__":
     app = App()
