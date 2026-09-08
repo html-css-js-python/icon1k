@@ -1,3 +1,4 @@
+import argparse
 import tkinter as tk
 from tkinter import ttk
 
@@ -142,7 +143,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.geometry("880x480")
+        self.geometry("1300x695")
         self.title("ICON1K")
 
     def ui(self):
@@ -150,15 +151,21 @@ class App(tk.Tk):
             self,
             width=128,
             height=64,
-            cell_size=7,
+            cell_size=10,
             margin=0.5
         )
-        grid.pack(anchor="nw", padx=(10, 0), pady=(10, 0))
+        grid.pack(pady=(10, 0))
 
         btn_clear = ttk.Button(self, text="Clear", command=grid.clear)
-        btn_clear.pack(anchor="nw", padx=(10, 0), pady=(5, 0))
+        btn_clear.pack(side="bottom", anchor="sw", padx=(10, 0), pady=(0, 10))
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("width", help="width of image")
+    parser.add_argument("height", help="height of image, must be divisible by 8")
+
+    args = parser.parse_args()
+
     app = App()
     app.ui()
     app.mainloop()
