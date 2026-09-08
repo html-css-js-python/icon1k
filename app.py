@@ -2,6 +2,7 @@ from enum import IntEnum
 import argparse
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 
 # ERROR CODES
 # 0 = No error
@@ -14,30 +15,6 @@ class ErrorCode(IntEnum):
     SIZE_TOO_SMALL = 2
     SIZE_DIVISIBILITY = 3
 
-
-def matrix_to_bytes(matrix, width, height):
-    if len(matrix) != height:
-        raise ValueError("Matrix height does not match height")
-
-    if any(len(row) != width for row in matrix):
-        raise ValueError("Matrix width does not match width")
-
-    if height % 8 != 0:
-        raise ValueError("Height must be divisible by 8")
-
-    result = []
-
-    for block_y in range(0, height, 8):
-        for x in range(width):
-            byte = 0
-
-            for bit in range(8):
-                if matrix[block_y + bit][x]:
-                    byte |= 1 << bit
-
-            result.append(byte)
-
-    return result
 
 class PixelGrid(tk.Canvas):
     def __init__(
@@ -150,13 +127,41 @@ class PixelGrid(tk.Canvas):
 
         return result
 
+    def get_code(self):
+        data = self.get()
+
+        lines = [
+            "const uint8_t bitmap[] PROGMEM =",
+            "{"
+        ]
+
+        for i, byte in enumerate(data):
+            lines.append(f"0x{byte:02X}," if (i + 1) % 12 == 0 else f"0x{byte:02X}, ")
+
+        code = "\n".join(lines)
+
+        data_lines = []
+
+        for i in range(0, len(data), 12):
+            chunk = data[i:i + 12]
+            data_lines.append(
+                " ".join(f"0x{byte:02X}," for byte in chunk)
+            )
+
+        code = (
+            "const uint8_t bitmap[] PROGMEM =\n"
+            "{\n"
+            + "\n".join(data_lines)
+            + "\n};\n\n"
+        )
+
+        return code
+
     def clear(self):
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 self.matrix[y][x] = 0
                 self.update_pixel(x, y)
-
-
 
 class App(tk.Tk):
     def __init__(self, args):
@@ -168,20 +173,48 @@ class App(tk.Tk):
         self.title("ICON1K")
         self.resizable(False, False)
 
+    def export_image(self):
+        code = self.grid.get_code()
+
+        print(code)
+        print(f"WIDTH={self.args.width}\nHEIGHT={self.args.height}")
+
+        self.clipboard_clear()
+        self.clipboard_append(code)
+
+        messagebox.showinfo("ICON1K", "Code are copied to clipboard.")
+
+        self.exptop.destroy()
+
     def popup_export(self):
         top = tk.Toplevel(self)
-        top.geometry("300x280")
-        top.title("Export...")
+        top.geometry("400x100")
+        top.title("Export Image...")
         top.resizable(False, False)
 
         top.transient(self)
         top.grab_set()
 
-        text_size = ttk.Label(top, text=f"WIDTH: {self.args.width}\nHEIGHT: {self.args.height}")
-        text_size.pack(anchor="nw", padx=(5, 0), pady=(5, 0))
+        self.exptop = top
+
+        text_size = ttk.Label(top, text=f"SIZE: {self.args.width}x{self.args.height} pixels")
+        text_size.pack(anchor="nw", padx=(10, 0), pady=(10, 0))
+
+        text_info = ttk.Label(top, text="To continue, click 'Export' button.")
+        text_info.pack(anchor="nw", padx=(10, 0), pady=(10, 0))
+
+        frame_btns = ttk.Frame(top)
+        
+        btn_export = ttk.Button(frame_btns, text="Export", command=self.export_image)
+        btn_export.pack(side="right", anchor="se", padx=(0, 10), pady=(0, 10))
+
+        btn_cancel = ttk.Button(frame_btns, text="Cancel", command=top.destroy)
+        btn_cancel.pack(side="right", anchor="sw", padx=(0, 5), pady=(0, 10))
+
+        frame_btns.pack(side="bottom", fill="x")
 
     def ui(self):
-        grid = PixelGrid(
+        self.grid = PixelGrid(
             self,
             width=self.args.width,
             height=self.args.height,
@@ -190,14 +223,14 @@ class App(tk.Tk):
             high="white" if self.args.invert else "black",
             low="blue" if self.args.invert else "green"
         )
-        grid.pack(pady=(10, 0))
+        self.grid.pack(pady=(10, 0))
 
         frame_btns = ttk.Frame(self)
 
         btn_export = ttk.Button(frame_btns, text="Export...", command=self.popup_export)
         btn_export.pack(side="right", anchor="se", padx=(0, 10), pady=(0, 10))
 
-        btn_clear = ttk.Button(frame_btns, text="Clear", command=grid.clear)
+        btn_clear = ttk.Button(frame_btns, text="Clear", command=self.grid.clear)
         btn_clear.pack(side="right", anchor="sw", padx=(0, 5), pady=(0, 10))
 
         frame_btns.pack(side="bottom", fill="x")
