@@ -1,6 +1,19 @@
+from enum import Enum
 import argparse
 import tkinter as tk
 from tkinter import ttk
+
+# ERROR CODES
+# 0 = No error
+# 1 = Size error (too big)
+# 2 = Size error (too small)
+# 3 = Size error (not divisible by 8)
+
+class ErrorCode(Enum):
+    SIZE_TOO_BIG = 1
+    SIZE_TOO_SMALL = 2
+    SIZE_DIVISIBILITY = 3
+
 
 def matrix_to_bytes(matrix, width, height):
     if len(matrix) != height:
@@ -34,12 +47,16 @@ class PixelGrid(tk.Canvas):
         height,
         cell_size=20,
         margin=2,
+        high="black",
+        low="dark green",
         **kwargs
     ):
         self.grid_width = width
         self.grid_height = height
         self.cell_size = cell_size
         self.margin = margin
+        self.high = high
+        self.low = low
 
         self.matrix = [
             [0 for _ in range(width)]
@@ -57,10 +74,10 @@ class PixelGrid(tk.Canvas):
         self.rectangles = []
         self.draw_grid()
 
-        self.bind("<Button-1>", self.draw_black)
-        self.bind("<B1-Motion>", self.draw_black)
-        self.bind("<Button-3>", self.draw_green)
-        self.bind("<B3-Motion>", self.draw_green)
+        self.bind("<Button-1>", self.draw_high)
+        self.bind("<B1-Motion>", self.draw_high)
+        self.bind("<Button-3>", self.draw_low)
+        self.bind("<B3-Motion>", self.draw_low)
 
     def draw_grid(self):
         for y in range(self.grid_height):
@@ -77,7 +94,7 @@ class PixelGrid(tk.Canvas):
                     y1,
                     x2,
                     y2,
-                    fill="dark green",
+                    fill=self.low,
                     outline=""
                 )
 
@@ -94,7 +111,7 @@ class PixelGrid(tk.Canvas):
 
         return x, y
 
-    def draw_black(self, event):
+    def draw_high(self, event):
         cell = self.get_cell(event)
 
         if cell is None:
@@ -104,7 +121,7 @@ class PixelGrid(tk.Canvas):
         self.matrix[y][x] = 1
         self.update_pixel(x, y)
 
-    def draw_green(self, event):
+    def draw_low(self, event):
         cell = self.get_cell(event)
 
         if cell is None:
@@ -115,7 +132,7 @@ class PixelGrid(tk.Canvas):
         self.update_pixel(x, y)
 
     def update_pixel(self, x, y):
-        color = "black" if self.matrix[y][x] else "dark green"
+        color = self.high if self.matrix[y][x] else self.low
         self.itemconfig(self.rectangles[y][x], fill=color)
 
     def get(self):
@@ -139,9 +156,13 @@ class PixelGrid(tk.Canvas):
                 self.matrix[y][x] = 0
                 self.update_pixel(x, y)
 
+
+
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, args):
         super().__init__()
+
+        self.args = args
 
         self.geometry("1300x695")
         self.title("ICON1K")
@@ -149,10 +170,12 @@ class App(tk.Tk):
     def ui(self):
         grid = PixelGrid(
             self,
-            width=128,
-            height=64,
+            width=self.args.width,
+            height=self.args.height,
             cell_size=10,
-            margin=0.5
+            margin=0.5,
+            high="white" if self.args.invert else "black",
+            low="blue" if self.args.invert else "green"
         )
         grid.pack(pady=(10, 0))
 
@@ -161,11 +184,20 @@ class App(tk.Tk):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("width", help="width of image")
-    parser.add_argument("height", help="height of image, must be divisible by 8")
+    parser.add_argument("width", type=int, help="width of image")
+    parser.add_argument("height", type=int, help="height of image, must be divisible by 8")
+    parser.add_argument("--invert", action="store_true", help="enable invert-style lcd matrix")
 
     args = parser.parse_args()
 
-    app = App()
+    if args.width > 128 or args.height > 64:
+        print("Error: Image size cannot be larger than 128x64.")
+        exit(1)
+
+    if args.height % 8 != 0:
+        print("Height must be divisible by 8.")
+        exit()
+
+    app = App(args)
     app.ui()
     app.mainloop()
