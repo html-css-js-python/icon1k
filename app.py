@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 import argparse
 import tkinter as tk
 from tkinter import ttk
@@ -9,7 +9,7 @@ from tkinter import ttk
 # 2 = Size error (too small)
 # 3 = Size error (not divisible by 8)
 
-class ErrorCode(Enum):
+class ErrorCode(IntEnum):
     SIZE_TOO_BIG = 1
     SIZE_TOO_SMALL = 2
     SIZE_DIVISIBILITY = 3
@@ -166,6 +166,19 @@ class App(tk.Tk):
 
         self.geometry("1300x695")
         self.title("ICON1K")
+        self.resizable(False, False)
+
+    def popup_export(self):
+        top = tk.Toplevel(self)
+        top.geometry("300x280")
+        top.title("Export...")
+        top.resizable(False, False)
+
+        top.transient(self)
+        top.grab_set()
+
+        text_size = ttk.Label(top, text=f"WIDTH: {self.args.width}\nHEIGHT: {self.args.height}")
+        text_size.pack(anchor="nw", padx=(5, 0), pady=(5, 0))
 
     def ui(self):
         grid = PixelGrid(
@@ -179,8 +192,15 @@ class App(tk.Tk):
         )
         grid.pack(pady=(10, 0))
 
-        btn_clear = ttk.Button(self, text="Clear", command=grid.clear)
-        btn_clear.pack(side="bottom", anchor="sw", padx=(10, 0), pady=(0, 10))
+        frame_btns = ttk.Frame(self)
+
+        btn_export = ttk.Button(frame_btns, text="Export...", command=self.popup_export)
+        btn_export.pack(side="right", anchor="se", padx=(0, 10), pady=(0, 10))
+
+        btn_clear = ttk.Button(frame_btns, text="Clear", command=grid.clear)
+        btn_clear.pack(side="right", anchor="sw", padx=(0, 5), pady=(0, 10))
+
+        frame_btns.pack(side="bottom", fill="x")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -192,11 +212,15 @@ if __name__ == "__main__":
 
     if args.width > 128 or args.height > 64:
         print("Error: Image size cannot be larger than 128x64.")
-        exit(1)
+        exit(ErrorCode.SIZE_TOO_BIG)
+
+    if args.width < 8 or args.height < 8:
+        print("Error: Image size cannot be smaller than 8x8.")
+        exit(ErrorCode.SIZE_TOO_SMALL)
 
     if args.height % 8 != 0:
-        print("Height must be divisible by 8.")
-        exit()
+        print("Error: Height must be divisible by 8.")
+        exit(ErrorCode.SIZE_DIVISIBILITY)
 
     app = App(args)
     app.ui()
