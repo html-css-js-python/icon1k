@@ -1,4 +1,5 @@
 from enum import IntEnum
+import os, sys
 import argparse
 import tkinter as tk
 from tkinter import ttk
@@ -15,6 +16,10 @@ class ErrorCode(IntEnum):
     SIZE_TOO_SMALL = 2
     SIZE_DIVISIBILITY = 3
 
+
+def resource_path(relative_path):
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 class PixelGrid(tk.Canvas):
     def __init__(
@@ -173,6 +178,11 @@ class App(tk.Tk):
         self.title("ICON1K")
         self.resizable(False, False)
 
+        try:
+            ico_path = resource_path("icon.ico")
+        finally:
+            self.iconbitmap(ico_path)
+
     def export_image(self):
         code = self.grid.get_code()
 
@@ -245,15 +255,15 @@ if __name__ == "__main__":
 
     if args.width > 128 or args.height > 64:
         print("Error: Image size cannot be larger than 128x64.")
-        exit(ErrorCode.SIZE_TOO_BIG)
+        sys.exit(ErrorCode.SIZE_TOO_BIG)
 
     if args.width < 8 or args.height < 8:
         print("Error: Image size cannot be smaller than 8x8.")
-        exit(ErrorCode.SIZE_TOO_SMALL)
+        sys.exit(ErrorCode.SIZE_TOO_SMALL)
 
     if args.height % 8 != 0:
         print("Error: Height must be divisible by 8.")
-        exit(ErrorCode.SIZE_DIVISIBILITY)
+        sys.exit(ErrorCode.SIZE_DIVISIBILITY)
 
     app = App(args)
     app.ui()
