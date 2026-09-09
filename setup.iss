@@ -27,27 +27,93 @@ WizardStyle=modern
 
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
+DisableWelcomePage=no
+DisableProgramGroupPage=yes
+
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "{#MyAppSource64}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: Is64BitInstallMode
-Source: "{#MyAppSource32}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: not Is64BitInstallMode
+Source: "{#MyAppSource64}\*"; \
+    DestDir: "{app}"; \
+    Flags: ignoreversion recursesubdirs createallsubdirs; \
+    Check: Is64BitInstallMode
+
+Source: "{#MyAppSource32}\*"; \
+    DestDir: "{app}"; \
+    Flags: ignoreversion recursesubdirs createallsubdirs; \
+    Check: not Is64BitInstallMode
 
 [Registry]
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
-    ValueType: expandsz; ValueName: "Path"; \
-    ValueData: "{olddata};{app}"; \
-    Check: NeedsAddPath
+Root: HKLM; \
+    Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+    ValueType: expandsz; \
+    ValueName: "Path"; \
+    ValueData: "{code:GetUpdatedPath}"; \
+    Check: ShouldAddToPath
 
 [Code]
-function NeedsAddPath(): Boolean;
+
 var
-  CurrentPath: String;
+  PathPage: TWizardPage;
+  PathCheckBox: TNewCheckBox;
+  OriginalPath: String;
+
+function IsPathAlreadyPresent(Path: String): Boolean;
+var
+  SearchPath: String;
 begin
-  CurrentPath := ExpandConstant('{olddata}');
-  Result := Pos(';' + ExpandConstant('{app}') + ';', ';' + CurrentPath + ';') = 0;
+  SearchPath := ';' + OriginalPath + ';';
+
+  Result :=
+    Pos(';' + Path + ';', SearchPath) > 0;
 end;
 
-[Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
+function ShouldAddToPath(): Boolean;
+begin
+  Result :=
+    PathCheckBox.Checked and
+    (not IsPathAlreadyPresent(ExpandConstant('{app}')));
+end;
+
+function GetUpdatedPath(Param: String): String;
+begin
+  if OriginalPath = '' then
+    Result := ExpandConstant('{app}')
+  else if IsPathAlreadyPresent(ExpandConstant('{app}')) then
+    Result := OriginalPath
+  else
+    Result := OriginalPath + ';' + ExpandConstant('{app}');
+end;
+
+procedure InitializeWizard;
+begin
+  { Read current system PATH }
+  RegQueryStringValue(
+    HKEY_LOCAL_MACHINE,
+    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+    'Path',
+    OriginalPath
+  );
+
+  { PATH configuration page }
+  PathPage := CreateCustomPage(
+    wpSelectDir,
+    'PATH Configuration',
+    'Choose whether ICON1K should be added to the system PATH.'
+  );
+
+  PathCheckBox := TNewCheckBox.Create(PathPage);
+  PathCheckBox.Parent := PathPage.Surface;
+
+  PathCheckBox.Left := ScaleX(0);
+  PathCheckBox.Top := ScaleY(10);
+
+  PathCheckBox.Width := PathPage.SurfaceWidth;
+  PathCheckBox.Height := ScaleY(40);
+
+  PathCheckBox.Caption :=
+    'Add ICON1K to the system PATH';
+
+  PathCheckBox.Checked := True;
+end;
