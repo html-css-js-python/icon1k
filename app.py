@@ -1,5 +1,5 @@
 from enum import IntEnum
-import os, sys
+import os, sys, platform
 import argparse
 import tkinter as tk
 from tkinter import ttk
@@ -178,17 +178,16 @@ class App(tk.Tk):
         self.title("ICON1K")
         self.resizable(False, False)
 
-        # Windows
-        try:
-            ico_path = resource_path("icon.ico")
-        finally:
-            self.iconbitmap(ico_path)
-
-        # Linux
-        # try:
-        #     png_path = resource_path("icon.png")
-        # finally:
-        #     self.iconphoto(True, tk.PhotoImage(png_path))
+        if platform.system() == "Linux":
+            try:
+                png_path = resource_path("icon.png")
+            finally:
+                self.iconphoto(True, tk.PhotoImage(png_path))
+        else:
+            try:
+                ico_path = resource_path("icon.ico")
+            finally:
+                self.iconbitmap(ico_path)
 
     def export_image(self):
         code = self.grid.get_code()
