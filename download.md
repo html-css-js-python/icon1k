@@ -36,5 +36,5 @@ sudo apt install python3-tk
 
 You can now run the program:
 ```shell
-python app.py 128 64
+python3 app.py 128 64
 ```
