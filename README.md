@@ -1,7 +1,7 @@
 # ICON1K
 A simple image tool for VidiaG Force RT-X12864
 
-[DOWNLOAD](/download.md)
+[Download](/download.md)
 
 ## Running from source
 
