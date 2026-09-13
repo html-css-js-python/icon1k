@@ -178,10 +178,17 @@ class App(tk.Tk):
         self.title("ICON1K")
         self.resizable(False, False)
 
+        # Windows
         try:
             ico_path = resource_path("icon.ico")
         finally:
             self.iconbitmap(ico_path)
+
+        # Linux
+        # try:
+        #     png_path = resource_path("icon.png")
+        # finally:
+        #     self.iconphoto(True, tk.PhotoImage(png_path))
 
     def export_image(self):
         code = self.grid.get_code()
